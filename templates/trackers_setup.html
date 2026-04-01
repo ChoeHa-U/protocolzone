@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Trackers | Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page setup-page">
+    <section class="setup-header">
+      <h1 class="page-title">ADD TRACKER</h1>
+      <div class="accent-rule"></div>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="setup-flash-wrap">
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <p class="flash-msg {{ category }}">{{ message }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="setup-stage">
+      <!-- Left panel creates a tracker. Right panel previews the trackers
+           already stored for the signed-in user. -->
+      <form class="setup-panel setup-form-panel" method="POST" action="{{ url_for('trackers_setup') }}">
+        <div class="setup-panel-head">
+          <h2 class="setup-panel-title">New Tracker</h2>
+          <p class="counter-line">{{ trackers|length }} / {{ max_trackers }} trackers added</p>
+        </div>
+
+        <div class="setup-form-grid">
+          <label class="field compact-field setup-field setup-field-wide">
+            <span>Name</span>
+            <input type="text" name="tracker_name" placeholder="Math revision, meditation, coding streak" {% if trackers|length >= max_trackers %}disabled{% endif %}>
+          </label>
+
+          <label class="field compact-field setup-field">
+            <span>Type</span>
+            <select name="tracker_type" {% if trackers|length >= max_trackers %}disabled{% endif %}>
+              {% for tracker_type in tracker_types %}
+                <option value="{{ tracker_type }}">{{ tracker_type|title }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label class="field compact-field setup-field">
+            <span>Goal days ({{ min_goal_days }}-{{ max_goal_days }})</span>
+            <input
+              type="number"
+              name="goal_days"
+              min="{{ min_goal_days }}"
+              max="{{ max_goal_days }}"
+              value="{{ default_goal_days }}"
+              placeholder="Days to achieve / avoid"
+              {% if trackers|length >= max_trackers %}disabled{% endif %}
+            >
+          </label>
+
+          <label class="field compact-field setup-field setup-field-wide">
+            <span>Quote {your reason to do this task/goal}</span>
+            <input type="text" name="quote" placeholder="Why this matters to you" {% if trackers|length >= max_trackers %}disabled{% endif %}>
+          </label>
+        </div>
+
+        <div class="setup-actions">
+          {% if trackers|length < max_trackers %}
+            <button type="submit" name="action" value="add" class="zone-button">ADD TRACKER</button>
+          {% endif %}
+
+          <button
+            type="submit"
+            name="action"
+            value="finish"
+            class="zone-button finish-button"
+          >
+            FINISH SETUP
+          </button>
+        </div>
+      </form>
+
+      <aside class="setup-panel setup-existing-panel">
+        <div class="setup-panel-head">
+          <h2 class="setup-panel-title">Existing Trackers</h2>
+          <p class="support-text">These will appear on your dashboard.</p>
+        </div>
+
+        <div class="setup-existing-list">
+          {% if trackers %}
+            {% for tracker in trackers %}
+              <article class="setup-existing-card">
+                <h3>{{ tracker.name }}</h3>
+                <p>
+                  {{ tracker.type|title }}
+                  {% if tracker.goal_days %} • {{ tracker.goal_days }} days{% endif %}
+                </p>
+                {% if tracker.quote %}<p class="muted-quote">{{ tracker.quote }}</p>{% endif %}
+              </article>
+            {% endfor %}
+          {% else %}
+            <article class="setup-existing-card setup-existing-empty">
+              <h3>No trackers yet</h3>
+              <p>Add your first tracker and it will appear here.</p>
+            </article>
+          {% endif %}
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

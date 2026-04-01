@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Tracker | Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page setup-page">
+    <section class="setup-header">
+      <h1 class="page-title">EDIT TRACKER</h1>
+      <div class="accent-rule"></div>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="setup-flash-wrap">
+          <div class="flash-stack">
+            {% for category, message in messages %}
+              <p class="flash-msg {{ category }}">{{ message }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="setup-stage setup-stage-single">
+      <form class="setup-panel setup-form-panel" method="POST" action="{{ url_for('edit_tracker', tracker_id=tracker.id) }}">
+        <input type="hidden" name="p" value="{{ selected_index }}">
+        <input type="hidden" name="m" value="{{ month_offset }}">
+
+        <div class="setup-panel-head">
+          <h2 class="setup-panel-title">{{ tracker.name }}</h2>
+          <p class="counter-line">{{ tracker.type|title }} tracker</p>
+        </div>
+
+        <div class="setup-form-grid">
+          <label class="field compact-field setup-field setup-field-wide">
+            <span>Name</span>
+            <input type="text" name="tracker_name" value="{{ tracker.name }}" required>
+          </label>
+
+          <label class="field compact-field setup-field">
+            <span>Goal days ({{ min_goal_days }}-{{ max_goal_days }})</span>
+            <input type="number" name="goal_days" min="{{ min_goal_days }}" max="{{ max_goal_days }}" value="{{ tracker.goal_days or min_goal_days }}" required>
+          </label>
+
+          <label class="field compact-field setup-field setup-field-wide">
+            <span>Quote {your reason to do this task/goal}</span>
+            <input type="text" name="quote" value="{{ tracker.quote }}" placeholder="Why this matters to you">
+          </label>
+        </div>
+
+        <p class="edit-help-text">
+          If the new goal days are smaller than your current tracked days, this tracker resets from today so the counter and calendar stay correct.
+        </p>
+
+        <div class="setup-actions">
+          <button type="submit" class="zone-button">SAVE CHANGES</button>
+          <a href="{{ url_for('dashboard', p=selected_index, m=month_offset) }}" class="auth-link edit-cancel-link">CANCEL</a>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

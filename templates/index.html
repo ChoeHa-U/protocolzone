@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page index-page">
+    <section class="hero-grid">
+      <div class="hero-left">
+        <header class="brand-block">
+          <p class="brand-kicker">PROTOCOL</p>
+          <h1 class="brand-title">-- ZONE --</h1>
+        </header>
+        <div class="accent-rule"></div>
+      </div>
+
+      <div class="hero-right">
+        <p class="index-tagline">Take control of your habits, track your goals, and study subjects.</p>
+      </div>
+    </section>
+
+    <div class="home-cta-wrap">
+      <a href="{{ url_for('login') }}" class="zone-button zone-button-home">ACTIVATE PROTOCOL</a>
+    </div>
+  </main>
+</body>
+</html>

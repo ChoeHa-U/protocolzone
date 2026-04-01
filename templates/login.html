@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page auth-page">
+    <h1 class="page-title">LOGIN</h1>
+    <div class="accent-rule"></div>
+
+    <section class="auth-wrap">
+      <form class="form-card" method="POST" action="{{ url_for('login') }}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-stack">
+              {% for category, message in messages %}
+                <p class="flash-msg {{ category }}">{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <label class="field">
+          <span>Email:</span>
+          <input type="email" name="email" required>
+        </label>
+
+        <label class="field">
+          <span>Password:</span>
+          <input type="password" name="password" required>
+        </label>
+
+        <button type="submit" class="zone-button">LOGIN</button>
+        <a href="{{ url_for('signup') }}" class="auth-link">SIGN UP</a>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

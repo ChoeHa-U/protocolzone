@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page dashboard-page-v2">
+    <header class="dash-v2-header">
+      <h1 class="dash-v2-title">DASHBOARD</h1>
+      <div class="dash-v2-header-actions">
+        <a class="dash-v2-logout" href="{{ url_for('logout') }}">Logout</a>
+        <div class="dash-v2-header-controls">
+          {% if active_tracker %}
+            <a class="dash-v2-edit-link" href="{{ url_for('edit_tracker', tracker_id=active_tracker.id, p=selected_index, m=month_offset) }}">Edit -</a>
+          {% endif %}
+          {% if total_trackers < max_trackers %}
+            <a href="{{ url_for('trackers_setup') }}" class="dash-v2-add-link">+ Add Protocol</a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <div class="dash-v2-rule"></div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="dash-v2-flash-wrap">
+          {% for category, message in messages %}
+            <p class="dash-v2-flash {{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="dash-v2-stage">
+      <div class="dash-v2-topbar">
+        {% if total_trackers > 0 %}
+          <div class="protocol-switcher">
+            <a class="switch-btn" href="{{ url_for('dashboard', p=selected_index-1, m=month_offset) if selected_index > 0 else url_for('dashboard', p=total_trackers-1, m=month_offset) }}">&lt;</a>
+            <div class="switch-label">Protocol {{ selected_index + 1 }}</div>
+            <a class="switch-btn" href="{{ url_for('dashboard', p=selected_index+1, m=month_offset) if selected_index < total_trackers - 1 else url_for('dashboard', p=0, m=month_offset) }}">&gt;</a>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if total_trackers == 0 %}
+        <section class="dash-v2-empty">
+          <p>No protocol configured yet.</p>
+          <a href="{{ url_for('trackers_setup') }}" class="zone-button">ADD TRACKER</a>
+        </section>
+      {% elif active_tracker %}
+        <section class="dash-v2-layout">
+          <!-- The main dashboard card is a 3-part row:
+               counter block, quote block, calendar block. -->
+          <article class="dash-v2-maincard">
+            <div class="dash-v2-left">
+              <p class="dash-v2-line">{{ active_tracker.headline_text }}</p>
+
+              <div class="dash-v2-streak-box">{{ active_tracker.current_streak }} {{ active_tracker.streak_unit }}</div>
+
+              <p class="dash-v2-goal-line">
+                Goal : {{ active_tracker.goal_days }} days
+              </p>
+            </div>
+
+            <div class="dash-v2-mid">
+              <p class="dash-v2-quote">“{{ active_tracker.display_quote }}”</p>
+            </div>
+
+            <div class="dash-v2-calendar-wrap">
+              <div class="dash-v2-calendar-card">
+                <div class="dash-v2-month-nav">
+                  <a class="month-nav-btn" href="{{ url_for('dashboard', p=selected_index, m=month_offset-1) }}">&lt;</a>
+                  <div class="dash-v2-month-label">{{ active_tracker.month_label|upper }}</div>
+                  <a class="month-nav-btn" href="{{ url_for('dashboard', p=selected_index, m=month_offset+1) }}">&gt;</a>
+                </div>
+
+                <div class="dash-v2-calendar-grid">
+                  {% for day in active_tracker.calendar %}
+                    {% if day.clickable %}
+                      <a
+                        href="{{ url_for('dashboard', p=selected_index, m=month_offset, check_tracker=active_tracker.id, check_date=day.date) }}"
+                        class="dash-v2-cell {{ day.style }}"
+                        title="{{ day.date }}"
+                      ><span>{{ day.day }}</span></a>
+                    {% else %}
+                      <div class="dash-v2-cell {{ day.style }}" title="{{ day.date }}"><span>{{ day.day if day.in_month else '' }}</span></div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <aside class="dash-v2-reminder">
+            <div class="dash-v2-reminder-copy">
+              <!-- Right-side reminder lane mirrors the dashboard quote
+                   using the same tracker quote saved in the database. -->
+              <div class="dash-v2-sidehead">
+                <p class="dash-v2-sidehead-label">PROTOCOL ZONE</p>
+                <div class="dash-v2-sidehead-mark">
+                  <span class="dash-v2-sidehead-arrow">↘</span>
+                </div>
+              </div>
+              <h3>REMIND YOURSELF</h3>
+              <p class="dash-v2-reminder-quote">{{ active_tracker.display_quote }}</p>
+              <p class="dash-v2-reminder-user">{{ user.username }}</p>
+            </div>
+
+            <div class="dash-v2-progress-wrap">
+              <div class="dash-v2-progress-rail">
+                <div class="dash-v2-progress-fill" style="height: {{ active_tracker.progress_pct }}%;"></div>
+              </div>
+            </div>
+          </aside>
+        </section>
+      {% endif %}
+    </div>
+
+  </main>
+
+  {% if checkin_prompt %}
+    <div class="checkin-modal-backdrop">
+      <div class="checkin-modal-card">
+        <h2>{{ checkin_prompt.question_text }}</h2>
+        <p class="modal-tracker-name">{{ checkin_prompt.tracker_name }}</p>
+
+        <form class="checkin-modal-form" method="POST" action="{{ url_for('checkin_tracker', tracker_id=checkin_prompt.tracker_id) }}">
+          <input type="hidden" name="check_date" value="{{ checkin_prompt.date }}">
+          <input type="hidden" name="protocol_index" value="{{ checkin_prompt.protocol_index }}">
+          <input type="hidden" name="month_offset" value="{{ checkin_prompt.month_offset }}">
+          <div class="modal-actions">
+            <button type="submit" name="status" value="yes" class="modal-choice-btn modal-choice-yes">YES!</button>
+            <button type="submit" name="status" value="no" class="modal-choice-btn modal-choice-no">NO</button>
+          </div>
+          <button type="submit" name="status" value="not_now" class="modal-not-now">NOT NOW</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+</body>
+</html>
