@@ -1,2 +1,2 @@
 # protocolzone
-A boring tracker web-app based on flask.
+A boring tracker webapp based on flask.
