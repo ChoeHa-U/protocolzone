@@ -1,10 +1,18 @@
 import hashlib
+import io
 import time
 from datetime import date, datetime, timedelta
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+import matplotlib
+from flask import Flask, Response, flash, redirect, render_template, request, session, url_for
 
 import database as db
+
+# Flask apps usually run on a server, not on a desktop screen.
+# "Agg" lets Matplotlib draw PNG images without trying to open a window.
+matplotlib.use('Agg')
+
+from matplotlib.figure import Figure
 
 # Create the main Flask application object.
 app = Flask(__name__)
@@ -20,8 +28,8 @@ DATE_FORMAT = '%Y-%m-%d'
 MAX_TRACKERS = 3
 # Reuse the allowed tracker types from the database module so both files stay consistent.
 TRACKER_TYPES = db.TRACKER_TYPES
-# Only habits and goals support daily yes/no check-ins.
-CHECKIN_TRACKER_TYPES = ('habit', 'goal')
+# All current tracker types use the daily yes/no check-in flow.
+CHECKIN_TRACKER_TYPES = TRACKER_TYPES
 # Simple signup rules for this beginner project.
 MIN_USERNAME_LENGTH = 3
 MAX_USERNAME_LENGTH = 20
@@ -53,6 +61,21 @@ CHECKIN_RESULT_BY_STATUS = {
     'unsure': None,
 }
 # Change this value if you want the popup to wait longer or shorter before showing again.
+STREAK_GRAPH_WIDTH_INCHES = 10
+STREAK_GRAPH_HEIGHT_INCHES = 5.6
+STREAK_GRAPH_TICK_COUNT = 6
+STREAK_GRAPH_LINE_COLOR = '#3b3d40'
+STREAK_GRAPH_FILL_COLOR = '#efea00'
+STREAK_GRAPH_GOAL_COLOR = '#51563a'
+STREAK_GRAPH_GRID_COLOR = '#d9d9d9'
+STREAK_GRAPH_DPI = 140
+STREAK_GRAPH_LINE_WIDTH = 2.6
+STREAK_GRAPH_MARKER_SIZE = 4.2
+STREAK_GRAPH_FILL_ALPHA = 0.18
+STREAK_GRAPH_GOAL_LINE_WIDTH = 1.2
+STREAK_GRAPH_GRID_LINE_WIDTH = 0.9
+STREAK_GRAPH_SINGLE_DAY_LEFT_EDGE = 0.75
+STREAK_GRAPH_SINGLE_DAY_RIGHT_EDGE = 1.25
 
 # Build the database tables when the app starts.
 db.init_db()
@@ -115,8 +138,16 @@ def today_text():
     return date.today().isoformat()
 
 
+def format_display_date(date_text):
+    """Turn a saved YYYY-MM-DD date into a friendlier date for the popup."""
+    selected_date = parse_iso_date(date_text)
+    if selected_date is None:
+        return date_text
+    return f'{selected_date.strftime("%B")} {selected_date.day}, {selected_date.year}'
+
+
 def tracker_supports_checkin(tracker_type):
-    """Only habits and goals use the daily yes/no popup flow."""
+    """Return whether this tracker type uses the daily yes/no popup flow."""
     return tracker_type in CHECKIN_TRACKER_TYPES
 
 
@@ -168,6 +199,168 @@ def build_checkin_lookup(checkin_rows):
     for checkin_row in checkin_rows:
         checkin_lookup[checkin_row['date']] = CHECKIN_RESULT_BY_STATUS.get(checkin_row['status'])
     return checkin_lookup
+
+
+def build_streak_graph_points(tracker):
+    """
+    Build the graph values from the tracker start date until today.
+    A clean day moves the line up, a slipped day resets it to 0, and an
+    unanswered day keeps the last visible value.
+    """
+    # The graph always ends on today's date.
+    today = date.today()
+
+    # The database stores dates as text, so we turn the tracker start date
+    # back into a real Python date before doing date math.
+    tracker_start_date = parse_iso_date(tracker.get('start_date')) or today
+
+    # If a bad future start date ever gets saved, keep the graph from breaking.
+    if tracker_start_date > today:
+        tracker_start_date = today
+
+    # The goal decides where the dashed goal line appears on the graph.
+    goal_days = tracker.get('goal_days') or DEFAULT_GOAL_DAYS
+
+    # Include both the start day and today in the count.
+    total_days = max(1, (today - tracker_start_date).days + 1)
+
+    # Load saved check-ins and turn them into a quick date lookup.
+    checkin_lookup = build_checkin_lookup(db.get_checkin_logs(tracker['id']))
+
+    # These are the x-axis values: 1, 2, 3, and so on.
+    day_numbers = []
+
+    # These are the y-axis values: the streak count for each day.
+    streak_values = []
+
+    # The graph starts at a zero-day streak.
+    current_streak = 0
+
+    # Walk through every calendar day from the tracker start date to today.
+    for day_offset in range(total_days):
+        # Find the real date for this graph point.
+        current_day = tracker_start_date + timedelta(days=day_offset)
+
+        # The first day is shown as day 1, not day 0.
+        day_numbers.append(day_offset + 1)
+
+        # Look up whether this exact date was clean, slipped, or unanswered.
+        day_result = checkin_lookup.get(current_day.isoformat())
+
+        # A clean day adds one day to the streak.
+        if day_result is True:
+            current_streak += 1
+
+        # A slipped day resets the streak back to zero.
+        elif day_result is False:
+            current_streak = 0
+
+        # Do not draw the line above the user's goal.
+        streak_values.append(min(current_streak, goal_days))
+
+    # Matplotlib needs one list for x values and one list for y values.
+    return day_numbers, streak_values, goal_days
+
+
+def build_streak_graph_ticks(last_day_number):
+    """Keep the day labels readable even when the tracker is long-running."""
+    # Short trackers can show every day number.
+    if last_day_number <= STREAK_GRAPH_TICK_COUNT:
+        return list(range(1, last_day_number + 1))
+
+    # Long trackers only show a few evenly-spaced day labels.
+    step = max(1, (last_day_number - 1) // (STREAK_GRAPH_TICK_COUNT - 1))
+
+    # Start labels at day 1 and move forward by the chosen step size.
+    tick_positions = list(range(1, last_day_number + 1, step))
+
+    # Always include the final day label, even if the step skipped it.
+    if tick_positions[-1] != last_day_number:
+        tick_positions.append(last_day_number)
+
+    return tick_positions
+
+
+def build_streak_graph_image(tracker):
+    """Render the tracker streak graph as a PNG image in memory."""
+    # First build the plain number lists that Matplotlib will draw.
+    day_numbers, streak_values, goal_days = build_streak_graph_points(tracker)
+
+    # Create one blank image area for the graph.
+    figure = Figure(figsize=(STREAK_GRAPH_WIDTH_INCHES, STREAK_GRAPH_HEIGHT_INCHES))
+
+    # Create the actual graph inside that image area.
+    graph = figure.subplots()
+
+    # Keep the graph background white so it matches the page design.
+    figure.patch.set_facecolor('#ffffff')
+
+    # Keep the plotting area white too.
+    graph.set_facecolor('#ffffff')
+
+    # Draw the main streak line.
+    graph.plot(
+        day_numbers,
+        streak_values,
+        color=STREAK_GRAPH_LINE_COLOR,
+        linewidth=STREAK_GRAPH_LINE_WIDTH,
+        marker='o',
+        markersize=STREAK_GRAPH_MARKER_SIZE,
+    )
+
+    # Add a soft yellow fill under the streak line.
+    graph.fill_between(
+        day_numbers,
+        streak_values,
+        color=STREAK_GRAPH_FILL_COLOR,
+        alpha=STREAK_GRAPH_FILL_ALPHA,
+    )
+
+    # Draw the dashed goal line across the graph.
+    graph.axhline(
+        goal_days,
+        color=STREAK_GRAPH_GOAL_COLOR,
+        linestyle='--',
+        linewidth=STREAK_GRAPH_GOAL_LINE_WIDTH,
+    )
+
+    # A one-day graph needs a little space on both sides of the point.
+    if day_numbers[-1] == 1:
+        graph.set_xlim(STREAK_GRAPH_SINGLE_DAY_LEFT_EDGE, STREAK_GRAPH_SINGLE_DAY_RIGHT_EDGE)
+    else:
+        graph.set_xlim(1, day_numbers[-1])
+
+    # The y-axis goes from 0 up to the goal.
+    graph.set_ylim(0, max(goal_days, 1))
+
+    # Pick readable labels for the x-axis.
+    graph.set_xticks(build_streak_graph_ticks(day_numbers[-1]))
+
+    # Add the labels and title shown around the graph.
+    graph.set_xlabel('Days since start')
+    graph.set_ylabel('Streak')
+    graph.set_title(f'{tracker["name"]} streak graph')
+
+    # Add light horizontal grid lines so the graph is easier to read.
+    graph.grid(True, axis='y', color=STREAK_GRAPH_GRID_COLOR, linewidth=STREAK_GRAPH_GRID_LINE_WIDTH)
+
+    # Hide the top and right border lines for a cleaner graph.
+    graph.spines['top'].set_visible(False)
+    graph.spines['right'].set_visible(False)
+
+    # Ask Matplotlib to fit labels neatly inside the image.
+    figure.tight_layout()
+
+    # Make an in-memory file so we do not need to save a PNG on disk.
+    image_buffer = io.BytesIO()
+
+    # Save the graph into that in-memory file as a PNG image.
+    figure.savefig(image_buffer, format='png', dpi=STREAK_GRAPH_DPI)
+
+    # Rewind to the start so Flask can read the PNG from the beginning.
+    image_buffer.seek(0)
+
+    return image_buffer
 
 
 def update_tracker_streak(tracker):
@@ -370,6 +563,7 @@ def build_checkin_prompt(tracker, selected_index, month_offset, check_date_text)
         'tracker_id': tracker['id'],
         'tracker_name': tracker['name'],
         'date': check_date_text,
+        'display_date': format_display_date(check_date_text),
         'question_text': tracker['question_text'],
         'protocol_index': selected_index,
         'month_offset': month_offset,
@@ -445,7 +639,7 @@ def find_tracker_in_list(trackers, tracker_id):
 
 
 def find_first_tracker_needing_prompt(trackers):
-    """Find the first habit/goal tracker that still needs today's answer."""
+    """Find the first tracker that still needs today's answer."""
     current_day_text = today_text()
     for tracker_index, tracker in enumerate(trackers):
         if not tracker_supports_checkin(tracker['type']):
@@ -749,6 +943,56 @@ def dashboard():
     )
 
 
+@app.route('/trackers/<int:tracker_id>/streak')
+def tracker_streak(tracker_id):
+    """Show the full-page streak graph for one tracker."""
+    user = get_logged_in_user()
+    if user is None:
+        return redirect(url_for('login'))
+
+    tracker = get_owned_tracker(tracker_id, user['id'])
+    if tracker is None:
+        flash('Tracker not found.', 'error')
+        return redirect(url_for('dashboard'))
+
+    selected_index = parse_int(request.args.get('p', '0').strip(), 0)
+    month_offset = parse_int(request.args.get('m', '0').strip(), 0)
+    prepare_tracker_for_dashboard(tracker, month_offset=month_offset)
+
+    return render_template(
+        'tracker_streak.html',
+        user=user,
+        tracker=tracker,
+        selected_index=selected_index,
+        month_offset=month_offset,
+    )
+
+
+@app.route('/trackers/<int:tracker_id>/streak-image.png')
+def tracker_streak_image(tracker_id):
+    """Return the generated streak graph image for one tracker."""
+    # Only logged-in users can request a graph image.
+    user = get_logged_in_user()
+    if user is None:
+        return redirect(url_for('login'))
+
+    # Only let a user view graph images for their own trackers.
+    tracker = get_owned_tracker(tracker_id, user['id'])
+    if tracker is None:
+        return Response(status=404)
+
+    # Build the graph image in memory.
+    image_buffer = build_streak_graph_image(tracker)
+
+    # Send the PNG bytes directly to the browser.
+    response = Response(image_buffer.getvalue(), mimetype='image/png')
+
+    # Do not let the browser reuse an old graph after the streak changes.
+    response.headers['Cache-Control'] = 'no-store'
+
+    return response
+
+
 @app.route('/trackers/<int:tracker_id>/edit', methods=['GET', 'POST'])
 def edit_tracker(tracker_id):
     """Edit one tracker that belongs to the logged-in user."""
@@ -813,9 +1057,9 @@ def checkin_tracker(tracker_id):
         flash('Tracker not found.', 'error')
         return redirect(url_for('dashboard'))
 
-    # Subjects do not use daily yes/no check-ins.
+    # Every current tracker type uses the same daily check-in flow.
     if not tracker_supports_checkin(tracker['type']):
-        flash('Check-in is only available for habit and goal trackers.', 'error')
+        flash('Check-in is not available for this tracker.', 'error')
         return redirect(url_for('dashboard'))
 
     # Read the hidden dashboard state so we can return to the same view.

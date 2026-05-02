@@ -634,6 +634,20 @@ a {
   white-space: nowrap;
 }
 
+.dash-v2-streak-link {
+  width: var(--dash-counter-size);
+  height: 42px;
+  margin-top: 16px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 /* Middle quote box */
 .dash-v2-mid {
   display: flex;
@@ -851,6 +865,39 @@ a {
   white-space: nowrap;
 }
 
+/* Streak page */
+.streak-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.streak-panel-summary {
+  font-size: 0.96rem;
+  line-height: 1.45;
+  color: #414141;
+}
+
+.streak-graph-card {
+  margin-top: 18px;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.streak-graph-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.streak-panel-actions {
+  margin-top: 0;
+  padding-top: 18px;
+  grid-template-columns: minmax(0, 280px);
+  justify-content: center;
+}
+
 /* Smaller auth scale used by login/signup */
 .auth-page .form-card {
   width: min(100%, 580px);
@@ -930,9 +977,17 @@ a {
 .modal-tracker-name {
   font-size: 1.18rem;
   line-height: 1.25;
-  margin-bottom: 32px;
+  margin-bottom: 6px;
   color: #3f3f3f;
   font-weight: 500;
+}
+
+.modal-check-date {
+  font-size: 1.02rem;
+  line-height: 1.25;
+  margin-bottom: 32px;
+  color: #555;
+  font-weight: 700;
 }
 
 .checkin-modal-form {
@@ -1062,7 +1117,8 @@ a {
   }
 
   .dash-v2-streak-box,
-  .dash-v2-goal-line {
+  .dash-v2-goal-line,
+  .dash-v2-streak-link {
     margin-top: 0;
   }
 
@@ -1109,6 +1165,10 @@ a {
 
   .dash-v2-progress-rail {
     height: 180px;
+  }
+
+  .streak-panel-actions {
+    grid-template-columns: minmax(0, 240px);
   }
 }
 
@@ -1201,6 +1261,11 @@ a {
     align-self: center;
   }
 
+  .dash-v2-streak-link {
+    width: 100%;
+    max-width: 220px;
+  }
+
   .switch-btn {
     height: 32px;
     width: 32px;
@@ -1234,5 +1299,9 @@ a {
   .modal-not-now {
     font-size: 1.6rem;
     margin-top: 18px;
+  }
+
+  .streak-graph-card {
+    padding: 10px;
   }
 }

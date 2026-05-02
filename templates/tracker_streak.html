@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streak Graph | Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page setup-page streak-page">
+    <section class="setup-header">
+      <h1 class="page-title">STREAK GRAPH</h1>
+      <div class="accent-rule"></div>
+    </section>
+
+    <section class="setup-stage setup-stage-single">
+      <section class="setup-panel streak-panel">
+        <div class="setup-panel-head">
+          <h2 class="setup-panel-title">{{ tracker.name }}</h2>
+          <p class="counter-line">
+            {{ tracker.type|title }} tracker • {{ tracker.current_streak }} {{ tracker.streak_unit }} • Goal {{ tracker.goal_days }} days
+          </p>
+        </div>
+
+        <p class="streak-panel-summary">
+          Upward days mean saved progress. A NO answer resets the line to 0, and NOT NOW keeps the graph unchanged until you answer later.
+        </p>
+
+        <div class="streak-graph-card">
+          <img
+            src="{{ url_for('tracker_streak_image', tracker_id=tracker.id) }}"
+            alt="Streak graph for {{ tracker.name }}"
+          >
+        </div>
+
+        <p class="edit-help-text">
+          This graph is built from your saved daily check-ins from the tracker start date up to today.
+        </p>
+
+        <div class="setup-actions streak-panel-actions">
+          <a href="{{ url_for('dashboard', p=selected_index, m=month_offset) }}" class="zone-button">CLOSE</a>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

@@ -66,6 +66,13 @@
               <p class="dash-v2-goal-line">
                 Goal : {{ active_tracker.goal_days }} days
               </p>
+
+              <a
+                class="dash-v2-streak-link"
+                href="{{ url_for('tracker_streak', tracker_id=active_tracker.id, p=selected_index, m=month_offset) }}"
+              >
+                SHOW STREAK
+              </a>
             </div>
 
             <div class="dash-v2-mid">
@@ -129,6 +136,7 @@
       <div class="checkin-modal-card">
         <h2>{{ checkin_prompt.question_text }}</h2>
         <p class="modal-tracker-name">{{ checkin_prompt.tracker_name }}</p>
+        <p class="modal-check-date">{{ checkin_prompt.display_date }}</p>
 
         <form class="checkin-modal-form" method="POST" action="{{ url_for('checkin_tracker', tracker_id=checkin_prompt.tracker_id) }}">
           <input type="hidden" name="check_date" value="{{ checkin_prompt.date }}">
