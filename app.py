@@ -867,9 +867,10 @@ def signup():
     username = request.form.get('username', '').strip()
     email = request.form.get('email', '').strip().lower()
     password = request.form.get('password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
 
     # Stop early if any required field is missing.
-    if not all([username, email, password]):
+    if not all([username, email, password, confirm_password]):
         flash('All fields are required.', 'error')
         return render_template('signup.html')
 
@@ -884,6 +885,11 @@ def signup():
     # Require a minimum password length.
     if len(password) < MIN_PASSWORD_LENGTH:
         flash(f'Password must be at least {MIN_PASSWORD_LENGTH} characters.', 'error')
+        return render_template('signup.html')
+
+    # Check that passwords match.
+    if password != confirm_password:
+        flash('Passwords do not match.', 'error')
         return render_template('signup.html')
 
     # Email must stay unique across all users.
