@@ -918,10 +918,11 @@ a {
 
 .milestone-next-card {
   margin-top: 18px;
-  border: 1px solid var(--stroke);
+  border: 3px solid #111111;
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--accent);
   padding: 18px;
+  color: #111111;
 }
 
 .milestone-next-card h3 {
@@ -937,7 +938,7 @@ a {
 }
 
 .milestone-next-card blockquote {
-  color: #3f3f3f;
+  color: #111111;
   font-weight: 700;
 }
 
@@ -955,14 +956,24 @@ a {
 }
 
 .milestone-card.is-reached {
-  border-color: #4e7c26;
-  background: #f8fbf4;
+  background: #ffffff;
+  color: #111111;
+}
+
+.milestone-card.is-current {
+  border: 3px solid #111111;
+  background: var(--accent);
+  color: #111111;
+}
+
+.milestone-card.is-upcoming {
+  background: #3b3d40;
+  color: #f2f2f2;
 }
 
 .milestone-small-label {
   font-size: 0.82rem;
   font-weight: 800;
-  color: #4b4b4b;
   text-transform: uppercase;
 }
 

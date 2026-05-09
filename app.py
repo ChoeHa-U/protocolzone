@@ -439,14 +439,17 @@ def build_tracker_milestones(tracker):
             'name': milestone['name'],
             'quote': milestone['quote'],
             'is_reached': is_reached,
+            'is_current': False,
             'days_remaining': days_remaining,
         })
 
         if next_milestone is None and not is_reached:
             next_milestone = milestone_cards[-1]
+            next_milestone['is_current'] = True
 
     if next_milestone is None:
         next_milestone = milestone_cards[-1]
+        next_milestone['is_current'] = True
 
     return milestone_cards, next_milestone
 

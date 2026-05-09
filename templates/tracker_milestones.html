@@ -41,7 +41,7 @@
 
         <div class="milestone-list">
           {% for milestone in milestone_cards %}
-            <article class="milestone-card {% if milestone.is_reached %}is-reached{% endif %}">
+            <article class="milestone-card {% if milestone.is_current %}is-current{% elif milestone.is_reached %}is-reached{% else %}is-upcoming{% endif %}">
               <div>
                 <p class="milestone-small-label">{{ milestone.days }} day milestone</p>
                 <h3>{{ milestone.name }}</h3>
