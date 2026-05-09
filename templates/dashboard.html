@@ -67,12 +67,20 @@
                 Goal : {{ active_tracker.goal_days }} days
               </p>
 
-              <a
-                class="dash-v2-streak-link"
-                href="{{ url_for('tracker_streak', tracker_id=active_tracker.id, p=selected_index, m=month_offset) }}"
-              >
-                SHOW STREAK
-              </a>
+              <div class="dash-v2-tracker-links">
+                <a
+                  class="dash-v2-tracker-link"
+                  href="{{ url_for('tracker_streak', tracker_id=active_tracker.id, p=selected_index, m=month_offset) }}"
+                >
+                  SHOW STREAK
+                </a>
+                <a
+                  class="dash-v2-tracker-link"
+                  href="{{ url_for('tracker_milestones', tracker_id=active_tracker.id, p=selected_index, m=month_offset) }}"
+                >
+                  MILESTONES
+                </a>
+              </div>
             </div>
 
             <div class="dash-v2-mid">

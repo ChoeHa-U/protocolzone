@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milestones | Protocol Zone</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-shell">
+  <main class="page setup-page milestone-page">
+    <section class="setup-header">
+      <h1 class="page-title">MILESTONES</h1>
+      <div class="accent-rule"></div>
+    </section>
+
+    <section class="setup-stage setup-stage-single">
+      <section class="setup-panel milestone-panel">
+        <div class="setup-panel-head">
+          <h2 class="setup-panel-title">{{ tracker.name }}</h2>
+          <p class="counter-line">
+            {{ tracker.type|title }} tracker • {{ tracker.current_streak }} {{ tracker.streak_unit }} • Goal {{ tracker.goal_days }} days
+          </p>
+        </div>
+
+        <p class="milestone-summary">
+          Milestones are based on your current streak. Keep answering your daily check-ins to unlock the next level.
+        </p>
+
+        <section class="milestone-next-card">
+          <p class="milestone-small-label">Next milestone</p>
+          <h3>{{ next_milestone.name }}</h3>
+          {% if next_milestone.is_reached %}
+            <p>All listed milestones are unlocked.</p>
+          {% else %}
+            <p>{{ next_milestone.days_remaining }} days remaining to reach {{ next_milestone.days }} days.</p>
+          {% endif %}
+          <blockquote>{{ next_milestone.quote }}</blockquote>
+        </section>
+
+        <div class="milestone-list">
+          {% for milestone in milestone_cards %}
+            <article class="milestone-card {% if milestone.is_reached %}is-reached{% endif %}">
+              <div>
+                <p class="milestone-small-label">{{ milestone.days }} day milestone</p>
+                <h3>{{ milestone.name }}</h3>
+              </div>
+
+              {% if milestone.is_reached %}
+                <p class="milestone-status">Unlocked</p>
+              {% else %}
+                <p class="milestone-status">{{ milestone.days_remaining }} days left</p>
+              {% endif %}
+
+              <p class="milestone-quote">{{ milestone.quote }}</p>
+            </article>
+          {% endfor %}
+        </div>
+
+        <div class="setup-actions milestone-panel-actions">
+          <a href="{{ url_for('dashboard', p=selected_index, m=month_offset) }}" class="zone-button">CLOSE</a>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

@@ -76,6 +76,48 @@ STREAK_GRAPH_GOAL_LINE_WIDTH = 1.2
 STREAK_GRAPH_GRID_LINE_WIDTH = 0.9
 STREAK_GRAPH_SINGLE_DAY_LEFT_EDGE = 0.75
 STREAK_GRAPH_SINGLE_DAY_RIGHT_EDGE = 1.25
+MILESTONE_LEVELS = [
+    {
+        'days': 1,
+        'name': 'First Step',
+        'quote': 'You started. That is the hardest door to open.',
+    },
+    {
+        'days': 3,
+        'name': 'Getting Warm',
+        'quote': 'You are building proof that you can return to this.',
+    },
+    {
+        'days': 7,
+        'name': 'One Week Strong',
+        'quote': 'You passed the first hard days. Keep the rhythm alive.',
+    },
+    {
+        'days': 14,
+        'name': 'Focused Mode',
+        'quote': 'Two weeks means this is becoming part of your system.',
+    },
+    {
+        'days': 21,
+        'name': 'Protocol Keeper',
+        'quote': 'You already crossed the hardest stretch. Keep going.',
+    },
+    {
+        'days': 30,
+        'name': 'Locked In',
+        'quote': 'A full month shows real discipline, not just motivation.',
+    },
+    {
+        'days': 50,
+        'name': 'Elite Streak',
+        'quote': 'Your consistency is becoming stronger than your excuses.',
+    },
+    {
+        'days': 100,
+        'name': 'Legend Level',
+        'quote': 'This is no longer a small streak. This is identity.',
+    },
+]
 
 # Build the database tables when the app starts.
 db.init_db()
@@ -380,6 +422,33 @@ def update_tracker_streak(tracker):
 
     tracker['current_streak'] = current_streak
     tracker['streak_unit'] = 'day' if current_streak in (0, 1) else 'days'
+
+
+def build_tracker_milestones(tracker):
+    """Build milestone cards from the tracker's current streak."""
+    current_streak = tracker.get('current_streak', 0)
+    milestone_cards = []
+    next_milestone = None
+
+    for milestone in MILESTONE_LEVELS:
+        is_reached = current_streak >= milestone['days']
+        days_remaining = max(0, milestone['days'] - current_streak)
+
+        milestone_cards.append({
+            'days': milestone['days'],
+            'name': milestone['name'],
+            'quote': milestone['quote'],
+            'is_reached': is_reached,
+            'days_remaining': days_remaining,
+        })
+
+        if next_milestone is None and not is_reached:
+            next_milestone = milestone_cards[-1]
+
+    if next_milestone is None:
+        next_milestone = milestone_cards[-1]
+
+    return milestone_cards, next_milestone
 
 
 def shift_month_start(base_month_start, month_offset):
@@ -991,6 +1060,34 @@ def tracker_streak_image(tracker_id):
     response.headers['Cache-Control'] = 'no-store'
 
     return response
+
+
+@app.route('/trackers/<int:tracker_id>/milestones')
+def tracker_milestones(tracker_id):
+    """Show motivational milestone levels for one tracker."""
+    user = get_logged_in_user()
+    if user is None:
+        return redirect(url_for('login'))
+
+    tracker = get_owned_tracker(tracker_id, user['id'])
+    if tracker is None:
+        flash('Tracker not found.', 'error')
+        return redirect(url_for('dashboard'))
+
+    selected_index = parse_int(request.args.get('p', '0').strip(), 0)
+    month_offset = parse_int(request.args.get('m', '0').strip(), 0)
+    prepare_tracker_for_dashboard(tracker, month_offset=month_offset)
+    milestone_cards, next_milestone = build_tracker_milestones(tracker)
+
+    return render_template(
+        'tracker_milestones.html',
+        user=user,
+        tracker=tracker,
+        milestone_cards=milestone_cards,
+        next_milestone=next_milestone,
+        selected_index=selected_index,
+        month_offset=month_offset,
+    )
 
 
 @app.route('/trackers/<int:tracker_id>/edit', methods=['GET', 'POST'])

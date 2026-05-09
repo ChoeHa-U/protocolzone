@@ -634,10 +634,16 @@ a {
   white-space: nowrap;
 }
 
-.dash-v2-streak-link {
+.dash-v2-tracker-links {
   width: var(--dash-counter-size);
-  height: 42px;
   margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.dash-v2-tracker-link {
+  width: 100%;
+  height: 42px;
   border: 1px solid var(--stroke);
   border-radius: 999px;
   background: #ffffff;
@@ -898,6 +904,91 @@ a {
   justify-content: center;
 }
 
+/* Milestone page */
+.milestone-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.milestone-summary {
+  font-size: 0.96rem;
+  line-height: 1.45;
+  color: #414141;
+}
+
+.milestone-next-card {
+  margin-top: 18px;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.milestone-next-card h3 {
+  margin-top: 4px;
+  font-size: 1.2rem;
+}
+
+.milestone-next-card p,
+.milestone-next-card blockquote {
+  margin-top: 8px;
+  font-size: 0.96rem;
+  line-height: 1.4;
+}
+
+.milestone-next-card blockquote {
+  color: #3f3f3f;
+  font-weight: 700;
+}
+
+.milestone-list {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.milestone-card {
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px 16px;
+}
+
+.milestone-card.is-reached {
+  border-color: #4e7c26;
+  background: #f8fbf4;
+}
+
+.milestone-small-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #4b4b4b;
+  text-transform: uppercase;
+}
+
+.milestone-card h3 {
+  margin-top: 4px;
+  font-size: 1.04rem;
+}
+
+.milestone-status,
+.milestone-quote {
+  margin-top: 8px;
+  font-size: 0.94rem;
+  line-height: 1.35;
+}
+
+.milestone-status {
+  font-weight: 800;
+}
+
+.milestone-panel-actions {
+  margin-top: 0;
+  padding-top: 18px;
+  grid-template-columns: minmax(0, 280px);
+  justify-content: center;
+}
+
 /* Smaller auth scale used by login/signup */
 .auth-page .form-card {
   width: min(100%, 580px);
@@ -1118,7 +1209,7 @@ a {
 
   .dash-v2-streak-box,
   .dash-v2-goal-line,
-  .dash-v2-streak-link {
+  .dash-v2-tracker-links {
     margin-top: 0;
   }
 
@@ -1167,7 +1258,8 @@ a {
     height: 180px;
   }
 
-  .streak-panel-actions {
+  .streak-panel-actions,
+  .milestone-panel-actions {
     grid-template-columns: minmax(0, 240px);
   }
 }
@@ -1261,7 +1353,7 @@ a {
     align-self: center;
   }
 
-  .dash-v2-streak-link {
+  .dash-v2-tracker-links {
     width: 100%;
     max-width: 220px;
   }
