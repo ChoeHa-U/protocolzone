@@ -39,6 +39,8 @@
           <blockquote>{{ next_milestone.quote }}</blockquote>
         </section>
 
+        <div class="milestone-divider"></div>
+
         <div class="milestone-list">
           {% for milestone in milestone_cards %}
             <article class="milestone-card {% if milestone.is_current %}is-current{% elif milestone.is_reached %}is-reached{% else %}is-upcoming{% endif %}">

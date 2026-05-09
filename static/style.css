@@ -942,8 +942,14 @@ a {
   font-weight: 700;
 }
 
+.milestone-divider {
+  height: 2px;
+  margin: 26px 0 22px;
+  background: var(--stroke);
+}
+
 .milestone-list {
-  margin-top: 16px;
+  margin-top: 0;
   display: grid;
   gap: 12px;
 }
