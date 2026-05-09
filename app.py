@@ -76,43 +76,56 @@ STREAK_GRAPH_GOAL_LINE_WIDTH = 1.2
 STREAK_GRAPH_GRID_LINE_WIDTH = 0.9
 STREAK_GRAPH_SINGLE_DAY_LEFT_EDGE = 0.75
 STREAK_GRAPH_SINGLE_DAY_RIGHT_EDGE = 1.25
+# These milestone levels are used by the milestones page.
+# The app does not save milestones in the database; it calculates them from
+# the user's current streak each time the page opens.
 MILESTONE_LEVELS = [
     {
+        # The user reaches this level when their current streak is at least 1 day.
         'days': 1,
+        # This is the level name shown on the milestone card.
         'name': 'First Step',
+        # This motivational line is shown on the milestone card.
         'quote': 'You started. That is the hardest door to open.',
     },
     {
+        # The user reaches this level when their current streak is at least 3 days.
         'days': 3,
         'name': 'Getting Warm',
         'quote': 'You are building proof that you can return to this.',
     },
     {
+        # The user reaches this level when their current streak is at least 7 days.
         'days': 7,
         'name': 'One Week Strong',
         'quote': 'You passed the first hard days. Keep the rhythm alive.',
     },
     {
+        # The user reaches this level when their current streak is at least 14 days.
         'days': 14,
         'name': 'Focused Mode',
         'quote': 'Two weeks means this is becoming part of your system.',
     },
     {
+        # The user reaches this level when their current streak is at least 21 days.
         'days': 21,
         'name': 'Protocol Keeper',
         'quote': 'You already crossed the hardest stretch. Keep going.',
     },
     {
+        # The user reaches this level when their current streak is at least 30 days.
         'days': 30,
         'name': 'Locked In',
         'quote': 'A full month shows real discipline, not just motivation.',
     },
     {
+        # The user reaches this level when their current streak is at least 50 days.
         'days': 50,
         'name': 'Elite Streak',
         'quote': 'Your consistency is becoming stronger than your excuses.',
     },
     {
+        # The user reaches this level when their current streak is at least 100 days.
         'days': 100,
         'name': 'Legend Level',
         'quote': 'This is no longer a small streak. This is identity.',
@@ -425,32 +438,55 @@ def update_tracker_streak(tracker):
 
 
 def build_tracker_milestones(tracker):
-    """Build milestone cards from the tracker's current streak."""
+    """
+    Build milestone cards from the tracker's current streak.
+    The route sends these cards to tracker_milestones.html.
+    """
+    # prepare_tracker_for_dashboard() already calculated current_streak.
+    # If it is missing for any reason, fall back to 0.
     current_streak = tracker.get('current_streak', 0)
+
+    # This list becomes the cards shown in tracker_milestones.html.
     milestone_cards = []
+
+    # This stores the one milestone the user is currently working toward.
     next_milestone = None
 
+    # Go through each fixed milestone level from MILESTONE_LEVELS.
     for milestone in MILESTONE_LEVELS:
+        # A milestone is reached when the current streak is high enough.
         is_reached = current_streak >= milestone['days']
+
+        # If the milestone is not reached, show how many days are left.
         days_remaining = max(0, milestone['days'] - current_streak)
 
+        # Build one clean dictionary for the template.
         milestone_cards.append({
+            # Required streak days for this milestone.
             'days': milestone['days'],
+            # Display name shown on the card.
             'name': milestone['name'],
+            # Motivational quote shown on the card.
             'quote': milestone['quote'],
+            # CSS/template uses this to show completed milestones as white.
             'is_reached': is_reached,
+            # CSS/template uses this to make exactly one card yellow.
             'is_current': False,
+            # Template uses this for "X days left".
             'days_remaining': days_remaining,
         })
 
+        # The first milestone that is not reached is the current target.
         if next_milestone is None and not is_reached:
             next_milestone = milestone_cards[-1]
             next_milestone['is_current'] = True
 
+    # If every milestone is reached, mark the final level as the current card.
     if next_milestone is None:
         next_milestone = milestone_cards[-1]
         next_milestone['is_current'] = True
 
+    # Return all cards plus the overview card shown at the top of the page.
     return milestone_cards, next_milestone
 
 
@@ -1068,20 +1104,34 @@ def tracker_streak_image(tracker_id):
 @app.route('/trackers/<int:tracker_id>/milestones')
 def tracker_milestones(tracker_id):
     """Show motivational milestone levels for one tracker."""
+    # Read the logged-in user from the Flask session.
     user = get_logged_in_user()
+
+    # If nobody is logged in, send them to the login page.
     if user is None:
         return redirect(url_for('login'))
 
+    # Load the tracker only if it belongs to this logged-in user.
     tracker = get_owned_tracker(tracker_id, user['id'])
+
+    # If the tracker does not exist or belongs to someone else, reject it.
     if tracker is None:
         flash('Tracker not found.', 'error')
         return redirect(url_for('dashboard'))
 
+    # Keep the selected dashboard tracker number for the CLOSE button.
     selected_index = parse_int(request.args.get('p', '0').strip(), 0)
+
+    # Keep the selected dashboard month for the CLOSE button.
     month_offset = parse_int(request.args.get('m', '0').strip(), 0)
+
+    # Build current_streak and other tracker display values before milestones.
     prepare_tracker_for_dashboard(tracker, month_offset=month_offset)
+
+    # Convert the current streak into milestone cards for the template.
     milestone_cards, next_milestone = build_tracker_milestones(tracker)
 
+    # Render the milestone page and pass all values the HTML needs.
     return render_template(
         'tracker_milestones.html',
         user=user,

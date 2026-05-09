@@ -9,14 +9,18 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="page-shell">
+  <!-- This page uses the same setup-page layout as tracker setup and streak graph. -->
   <main class="page setup-page milestone-page">
+    <!-- Page title area. -->
     <section class="setup-header">
       <h1 class="page-title">MILESTONES</h1>
       <div class="accent-rule"></div>
     </section>
 
+    <!-- Single centered panel, similar to the streak graph page. -->
     <section class="setup-stage setup-stage-single">
       <section class="setup-panel milestone-panel">
+        <!-- Tracker summary values are prepared in app.py before rendering this page. -->
         <div class="setup-panel-head">
           <h2 class="setup-panel-title">{{ tracker.name }}</h2>
           <p class="counter-line">
@@ -24,42 +28,62 @@
           </p>
         </div>
 
+        <!-- Short explanation for the user. -->
         <p class="milestone-summary">
           Milestones are based on your current streak. Keep answering your daily check-ins to unlock the next level.
         </p>
 
+        <!-- Overview card for the milestone the user is working toward. -->
         <section class="milestone-next-card">
           <p class="milestone-small-label">Next milestone</p>
+          <!-- next_milestone comes from build_tracker_milestones() in app.py. -->
           <h3>{{ next_milestone.name }}</h3>
+
+          <!-- If every milestone is reached, show a completion message. -->
           {% if next_milestone.is_reached %}
             <p>All listed milestones are unlocked.</p>
           {% else %}
+            <!-- Otherwise, show how many more clean streak days are needed. -->
             <p>{{ next_milestone.days_remaining }} days remaining to reach {{ next_milestone.days }} days.</p>
           {% endif %}
+
+          <!-- Motivational quote for the current target milestone. -->
           <blockquote>{{ next_milestone.quote }}</blockquote>
         </section>
 
+        <!-- Visual divider between the overview card and the full milestone list. -->
         <div class="milestone-divider"></div>
 
+        <!-- Full list of milestones. -->
         <div class="milestone-list">
+          <!-- milestone_cards is built in app.py from MILESTONE_LEVELS. -->
           {% for milestone in milestone_cards %}
+            <!--
+              is-current  -> yellow card with thick border
+              is-reached  -> white completed card
+              is-upcoming -> dark gray locked card
+            -->
             <article class="milestone-card {% if milestone.is_current %}is-current{% elif milestone.is_reached %}is-reached{% else %}is-upcoming{% endif %}">
               <div>
                 <p class="milestone-small-label">{{ milestone.days }} day milestone</p>
                 <h3>{{ milestone.name }}</h3>
               </div>
 
+              <!-- Completed milestones show Unlocked. -->
               {% if milestone.is_reached %}
                 <p class="milestone-status">Unlocked</p>
               {% else %}
+                <!-- Current and future milestones show remaining days. -->
                 <p class="milestone-status">{{ milestone.days_remaining }} days left</p>
               {% endif %}
 
+              <!-- Each milestone has its own quote from app.py. -->
               <p class="milestone-quote">{{ milestone.quote }}</p>
             </article>
           {% endfor %}
         </div>
 
+        <!-- Return to the same dashboard tracker and month. -->
         <div class="setup-actions milestone-panel-actions">
           <a href="{{ url_for('dashboard', p=selected_index, m=month_offset) }}" class="zone-button">CLOSE</a>
         </div>
